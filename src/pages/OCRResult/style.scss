@@ -1,0 +1,12 @@
+.result{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    h1, p, span{
+        align-self: center;
+    }
+    span{
+        display:flex;
+        gap: 20px;
+    }
+}
