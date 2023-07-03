@@ -5,6 +5,26 @@ const luckysheet = window.luckysheet;
 
 const useDatasheet = () => {
   const { celldata, merge, rowlen, columnlen } = useSelector((state) => ({ ...state.table }));
+
+  // const [data, setData] = useState([{
+  //   name: "Table", //Worksheet name
+  //   index: 0,
+  //   status: "1", //Worksheet active status,
+  //   order: "0",
+  //   row: Object.keys(rowlen),
+  //   column: Object.keys(columnlen),
+  //   config: {
+  //       merge: merge,
+  //       columnlen: columnlen,
+  //       rowlen: rowlen,
+  //   },
+  //   celldata: celldata,
+  //   scrollLeft: 0,
+  //   scrollTop: 0,
+  //   zoomRatio: 1,
+  // }])
+
+  // Example data
   const [data, setData] = useState([{
     name: "Table", //Worksheet name
     index: 0,
