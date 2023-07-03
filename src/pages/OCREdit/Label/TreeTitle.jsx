@@ -25,13 +25,15 @@ const TreeTitle = (props) => {
 
     const handleClick = async(id) => {
         try{
-            const tableMetadata = textmetadata.filter(meta => meta.key === id)[0].metadata;
+            const tableStructure = textmetadata.filter(meta => meta.key === id)[0].metadata;
             const tableCoordinate = bbmetadata.filter(meta => meta.id === id)[0]
             const url = await cropImageURL(pageimages['preprocess'], tableCoordinate)
             dispatch(tableupdate({
                 imageurl: url, 
-                excelurl: tableMetadata.excelurl, 
-                tablename: tableMetadata.tablename,
+                celldata: tableStructure.celldata, 
+                merge: tableStructure.merge,
+                rowlen: tableStructure.rowlen,
+                columnlen: tableStructure.columnlen
             }))
             setOpenTableEdit(true)
         } catch (e) {

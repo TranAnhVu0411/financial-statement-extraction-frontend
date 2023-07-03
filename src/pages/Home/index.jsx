@@ -143,21 +143,21 @@ const Home = () => {
                 //     throw new Error('Upload result failed');
                 // }
                 // Upload excel file
-                if (ocrResponses[i].data.file.length > 0) {
-                    for (let j = 0; j<ocrResponses[i].data.file.length; j++) {
-                        let excelFileObj = await urltoFile(ocrResponses[i].data.file[j].base64, `${ocrResponses[i].data.file[j].name}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                        let excelFormData = new FormData();
-                        excelFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}/metadata/${i}/excel`);
-                        excelFormData.append('file', excelFileObj);
-                        metadataRequestList.push(FileService.upload(excelFormData))
+                // if (ocrResponses[i].data.file.length > 0) {
+                //     for (let j = 0; j<ocrResponses[i].data.file.length; j++) {
+                //         let excelFileObj = await urltoFile(ocrResponses[i].data.file[j].base64, `${ocrResponses[i].data.file[j].name}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                //         let excelFormData = new FormData();
+                //         excelFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}/metadata/${i}/excel`);
+                //         excelFormData.append('file', excelFileObj);
+                //         metadataRequestList.push(FileService.upload(excelFormData))
                         // let excelResponse = await FileService.upload(metadataFormData)
                         // if (excelResponse.status!==200){
                         //     await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
                         //     await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/metadata`});
                         //     throw new Error('Upload result failed');
                         // }
-                    }
-                }
+                //     }
+                // }
             }
             let metadataResponses = await axios.all(metadataRequestList);
             let metadataStatusList = metadataResponses.map(response => {return response.status})

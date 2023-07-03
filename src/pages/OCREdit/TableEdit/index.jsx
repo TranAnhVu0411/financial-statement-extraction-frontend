@@ -9,66 +9,106 @@ import useDatasheet from "./useDatasheet";
 
 const TableEdit = ({ open, onCancel, id }) => {
     const { imageurl } = useSelector((state) => ({ ...state.table }));
-    const { sheetRef } = useDatasheet();
+    // const { sheetRef } = useDatasheet();
+    const { celldata, merge, rowlen, columnlen } = useSelector((state) => ({ ...state.table }));
+
+    const [data, setData] = useState([{
+        name: "Table", //Worksheet name
+        index: 0,
+        status: "1", //Worksheet active status,
+        order: "0",
+        row: Object.keys(rowlen).length,
+        column: Object.keys(columnlen).length,
+        config: {merge: merge, rowlen: rowlen, columnlen: columnlen},
+        celldata: celldata,
+        scrollLeft: 0,
+        scrollTop: 0,
+        zoomRatio: 1,
+    }]);
+  
+  const sheetRef = useRef();
+  const sheetId = 'xxxxxxxxx';
+  useEffect(() => {
+        const sheetElement = sheetRef.current;
+        console.log('sheetElement', sheetElement)
+        if (sheetElement) {
+            sheetElement.setAttribute("id", sheetId);
+            luckysheet.create({
+                container: sheetId,
+                gridKey: sheetId,
+                data,
+                // hook: {
+                //   updated: () => {
+                //     const sheetJson = luckysheet.toJson();
+                //     setData(sheetJson.data);
+                //   }
+                // }
+            });
+    }
+  }, [data]);
 
     return(
-        <Modal
-            open={open} 
-            bodyStyle={{
-                height: '500px',
-                display: 'flex', 
-                flexDirection: 'row', 
-                gap: '10px'
-            }}
-            width={2000}
-            okText="Save"
-            cancelText="Cancel"
-            onCancel={onCancel}
-            closable={false}
-        >
+        <div style={{position: 'fixed', left: 0, right: 0, top: 0, bottom: 0, background: "rgba(0, 0, 0, 0.3)"}}>
+            <button onClick={onCancel} type="button">Close</button>
             <div
-                style={{
-                    width: '50%',
-                    height: '100%',
-                    position: "relative",
-                    overflow: "hidden",
-                    border: '1px solid black',
-                    backgroundColor: '#D3D3D3',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                }}
-            >
-                <ReactPanZoom
-                    image={imageurl}
-                    alt="table image"
-                />
-            </div>
-            <div
-                style={{
-                    width: '50%',
-                    // height: '100%',
-                    position: "relative",
-                    overflow: "hidden",
-                    border: '1px solid black',
-                    backgroundColor: '#D3D3D3'
-                }}
+                // style={{
+                //     width: '50%',
+                //     // height: '100%',
+                //     position: "relative",
+                //     overflow: "hidden",
+                //     border: '1px solid black',
+                //     backgroundColor: '#D3D3D3'
+                // }}
+                id='xxxxxxxxx'
                 ref={sheetRef}
             >
-                {/* <Workbook
-                    data={data}
-                    toolbarItems={["undo","redo","merge-cell"]}
-                    showSheetTabs={false}
-                    cellContextMenu={["copy",
-                    "paste",
-                    "|",
-                    "insert-row",
-                    "insert-column",
-                    "delete-row",
-                    "delete-column",]}
-                /> */}
             </div>
-        </Modal>
+        </div>  
+        // <Modal
+        //     open={open} 
+        //     bodyStyle={{
+        //         height: '500px',
+        //         display: 'flex', 
+        //         flexDirection: 'row', 
+        //         gap: '10px'
+        //     }}
+        //     width={2000}
+        //     okText="Save"
+        //     cancelText="Cancel"
+        //     onCancel={onCancel}
+        //     closable={false}
+        // >
+        //     <div
+        //         style={{
+        //             width: '50%',
+        //             height: '100%',
+        //             position: "relative",
+        //             overflow: "hidden",
+        //             border: '1px solid black',
+        //             backgroundColor: '#D3D3D3',
+        //             display: 'flex',
+        //             justifyContent: 'center',
+        //             alignItems: 'center',
+        //         }}
+        //     >
+        //         <ReactPanZoom
+        //             image={imageurl}
+        //             alt="table image"
+        //         />
+        //     </div>
+            // <div
+            //     style={{
+            //         width: '50%',
+            //         // height: '100%',
+            //         position: "relative",
+            //         overflow: "hidden",
+            //         border: '1px solid black',
+            //         backgroundColor: '#D3D3D3'
+            //     }}
+            //     ref={sheetRef}
+            // >
+            // </div>
+        // </Modal>
     )
 }
 

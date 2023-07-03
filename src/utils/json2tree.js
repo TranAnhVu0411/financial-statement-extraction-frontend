@@ -38,7 +38,8 @@ export const json2tree = (metadata) => {
         treeTextMetadata.push({
             key: id,
             type: 'table',
-            metadata: {tablename: tableMetadata[i].table_id, excelurl: tableMetadata[i].excel_url},
+            // metadata: {tablename: tableMetadata[i].table_id, excelurl: tableMetadata[i].excel_url},
+            metadata: tableMetadata[i].table_structure
         })
         let coordinate = tableMetadata[i].table_coordinate;
         treeBBMetadata.push({
