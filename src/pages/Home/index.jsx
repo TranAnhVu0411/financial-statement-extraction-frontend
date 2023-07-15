@@ -99,6 +99,7 @@ const Home = () => {
                 let fileObj = await urltoFile(preprocessResponse.data[i]['preprocess'], `page-${i}-${'preprocess'}.jpg`,'image/jpeg');
                 let ocrFormData = new FormData();
                 ocrFormData.append('file', fileObj);
+                ocrFormData.append('type', 'app');
                 let response = await OCRService.ocr(ocrFormData)
                 if (response.status!==200){
                     await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
@@ -165,8 +166,8 @@ const Home = () => {
                 await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
                 await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/metadata`});
                 throw new Error('Upload result failed');
-            }
-            // await DocumentService.update(documentResponse.data.id, {ocrstatus: 'ready'});
+            } 
+            await DocumentService.update(documentResponse.data.id, {ocrstatus: 'ready'});
             dispatch(loadingchange({loading: false, tip: `completed`}))
             navigate('/result')
         } catch (err) {

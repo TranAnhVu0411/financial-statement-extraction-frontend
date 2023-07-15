@@ -8,7 +8,8 @@ const newbbSlice = createSlice({
         type: '', // Loại bounding box sẽ vẽ (line/table)
         linemeta: [], // metadata của text line {id, text}
         createnewtextbox: true, // Tạo text box mới cho các line được tạo nếu là true, nếu không thì chọn các text box có sẵn để chứa vào
-        textboxid: '', // textbox id có sẵn trước đó 
+        textboxid: '', // textbox id có sẵn trước đó
+        tablemeta: [], //metadata của table {id, data}
     },
     reducers: {
         newupdate: (state, action) => {
@@ -18,10 +19,20 @@ const newbbSlice = createSlice({
             state.linemeta = action.payload.linemeta !== undefined ? action.payload.linemeta : state.linemeta;
             state.createnewtextbox = action.payload.createnewtextbox !== undefined ? action.payload.createnewtextbox : state.createnewtextbox;
             state.textboxid = action.payload.textboxid !== undefined ? action.payload.textboxid : state.textboxid;
+            state.tablemeta = action.payload.tablemeta !== undefined ? action.payload.tablemeta : state.tablemeta;
         },
+        newreset: (state, action) => {
+            state.displaynewbb = []
+            state.newbbmeta = []
+            state.type =  ''
+            state.linemeta = []
+            state.createnewtextbox = true
+            state.textboxid = ''
+            state.tablemeta = []
+        }
     },
 })
 
-export const { newupdate } = newbbSlice.actions;
+export const { newupdate, newreset } = newbbSlice.actions;
 
 export default newbbSlice.reducer;

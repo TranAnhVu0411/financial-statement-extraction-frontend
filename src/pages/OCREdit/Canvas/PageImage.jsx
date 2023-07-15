@@ -43,6 +43,7 @@ const PageImage = () => {
   return (
     <Image
       image={image}
+      onMouseDown={() => {dispatch(canvasupdate({selectedbbid: null}));}}
     />
   );
 };

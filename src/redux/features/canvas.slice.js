@@ -37,6 +37,7 @@ const canvasSlice = createSlice({
         highlightbb: [], // các box highlight sẽ làm nổi bật
 
         selectedbbid: null, // bounding box id đang được chọn trên canvas
+        disablemenu: true, // Disable tất cả nút trong menu (Lúc khởi tạo ban đầu)
     },
     reducers: {
         canvasupdate: (state, action) => {
@@ -63,6 +64,7 @@ const canvasSlice = createSlice({
             state.highlightbb = action.payload.highlightbb !== undefined ? action.payload.highlightbb : state.highlightbb;
 
             state.selectedbbid = action.payload.selectedbbid !== undefined ? action.payload.selectedbbid : state.selectedbbid;
+            state.disablemenu = action.payload.disablemenu !== undefined ? action.payload.disablemenu : state.disablemenu;
         },
         reset: (state, action) => {
             state.checkedid = [];

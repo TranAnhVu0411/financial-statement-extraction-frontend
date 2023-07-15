@@ -9,7 +9,7 @@ import { message } from 'antd'
 
 const Canvas = () => {
     const { width, height, orgwidth, orgheight, scale, bbmetadata, canvasstate, selectedbbid, highlightbb } = useSelector((state) => ({ ...state.canvas }));
-    const { displaynewbb, newbbmeta, type, linemeta } = useSelector((state) => ({ ...state.newbb }));
+    const { displaynewbb, newbbmeta, type, linemeta, tablemeta } = useSelector((state) => ({ ...state.newbb }));
     
     let dispatch = useDispatch()
     const handleMouseDown = e => {
@@ -18,14 +18,16 @@ const Canvas = () => {
                 message.warning('Please select class type')
             } else {
                 if (e.target.constructor.name === 'Image' || e.target.constructor.name === 'Rect'){
-                    if (
-                        (newbbmeta.length === 0) && 
-                        // (displaynewbb.length === 0)
-                        ((type==='table' && displaynewbb.length === 0) || (type==='line'))
-                    ){
-                        const { x, y } = e.target.getStage().getRelativePointerPosition();
-                        const id = uuidv4();
-                        dispatch(newupdate({newbbmeta: [{ x: x, y: y, width: 0, height: 0, id: id, type: 'new' }]}));
+                    // Tránh tạo bb mới khi dịch chuyển bb
+                    if (e.target.getStage().container().style.cursor !== "move"){
+                        if (selectedbbid===null &&
+                            (newbbmeta.length === 0)  
+                            // && ((type==='table' && displaynewbb.length === 0) || (type==='line')) // Thêm dòng này nếu limit số lượng table vẽ là 1
+                        ){
+                            const { x, y } = e.target.getStage().getRelativePointerPosition();
+                            const id = uuidv4();
+                            dispatch(newupdate({newbbmeta: [{ x: x, y: y, width: 0, height: 0, id: id, type: 'new' }]}));
+                        }
                     }
                 }
             }
@@ -50,9 +52,13 @@ const Canvas = () => {
                 if (rectangleToAdd.width===0 || rectangleToAdd.height===0){
                     dispatch(newupdate({newbbmeta: []}));
                 }else{
-                    dispatch(newupdate({newbbmeta: [], displaynewbb: type=='table'?[rectangleToAdd]:[...displaynewbb, rectangleToAdd]}));
+                    // dispatch(newupdate({newbbmeta: [], displaynewbb: type=='table'?[rectangleToAdd]:[...displaynewbb, rectangleToAdd]})); // Giới hạn số lượng bb của table là 1
+                    dispatch(newupdate({newbbmeta: [], displaynewbb: [...displaynewbb, rectangleToAdd]}));
                     if (type === 'line') {
                         dispatch(newupdate({linemeta: [...linemeta, {id: id, text: ''}]}))
+                    }
+                    if (type === 'table') {
+                        dispatch(newupdate({tablemeta: [...tablemeta, {id: id}]}))
                     }
                 }
             }
@@ -106,7 +112,7 @@ const Canvas = () => {
                             canvasMeasures = {{width: width, height: height}}
                             originalMeasures={{width: orgwidth, height: orgheight}}
                             edit={false}
-                            color={rect.type=='line'?'rgba(0, 0, 255, 0.3)':rect.type=='table'?'rgba(255, 0, 0, 0.3)':'rgba(0, 255, 0, 0.3)'}
+                            color={rect.type==='line'?'rgba(0, 0, 255, 0.3)':rect.type==='table'?'rgba(255, 0, 0, 0.3)':'rgba(0, 255, 0, 0.3)'}
                             type='highlight'
                         />
                     );
@@ -119,7 +125,12 @@ const Canvas = () => {
                             shapeProps={rect}
                             isSelected={rect.id === selectedbbid}
                             onSelect={() => {
-                                dispatch(canvasupdate({selectedbbid: rect.id}));
+                                if (canvasstate==='edit'){
+                                    dispatch(canvasupdate({selectedbbid: rect.id}));
+                                }
+                                if (canvasstate==='new'){
+                                    dispatch(canvasupdate({selectedbbid: null}));
+                                }
                             }}
                             onChange={(newAttrs) => {
                                 const rects = bbmetadata.slice();
@@ -139,7 +150,7 @@ const Canvas = () => {
                             canvasMeasures = {{width: width, height: height}}
                             originalMeasures={{width: orgwidth, height: orgheight}}
                             edit={canvasstate==='edit'?true:false}
-                            color={rect.type=='line'?'blue':'red'}
+                            color={rect.type==='line'?'blue':'red'}
                             type='boundingbox'
                         />
                     );
@@ -155,8 +166,17 @@ const Canvas = () => {
                                 dispatch(canvasupdate({selectedbbid: rect.id}));
                             }}
                             onChange={(newAttrs) => {
-                                const rects = newbbmeta.slice();
+                                const rects = displaynewbb.concat(newbbmeta).slice();
                                 rects[i] = newAttrs;
+                                if (highlightbb.filter(bb => bb.id === newAttrs.id).length > 0) {
+                                    let changehighlightbb = highlightbb.map(bb => {
+                                        if (bb.id === newAttrs.id) {
+                                            return newAttrs
+                                        }
+                                        return bb
+                                    })
+                                    dispatch(canvasupdate({highlightbb: changehighlightbb}))
+                                }
                                 dispatch(newupdate({displaynewbb: rects}));
                             }}
                             canvasMeasures = {{width: width, height: height}}

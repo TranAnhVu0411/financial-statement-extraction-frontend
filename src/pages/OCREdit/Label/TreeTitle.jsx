@@ -5,6 +5,7 @@ import { useState } from 'react';
 import TableEdit from '../TableEdit/index'
 import { cropImageURL } from "../../../utils/imageCrop";
 import { tableupdate } from "../../../redux/features/table.slice";
+import { canvasupdate } from "../../../redux/features/canvas.slice";
 
 const { Paragraph } = Typography;
 
@@ -23,17 +24,39 @@ const TreeTitle = (props) => {
         type = "table";
     }
 
+    const handleLineChange = (value) => {
+        let parentId = bbmetadata.filter(meta => meta.id === props.id)[0].parent_id
+        let linesMeta = textmetadata.filter(meta => meta.key === parentId)[0].children
+        let linesMetaCopy = linesMeta.map(meta => {
+            if (meta.key === props.id) {
+                return {...meta, text: value}
+            }
+            return meta
+        })
+        let textmetadataCopy = textmetadata.map(meta => {
+            if(meta.key === parentId) {
+                return {...meta, children: linesMetaCopy}
+            }
+            return meta
+        })
+        dispatch(canvasupdate({textmetadata: textmetadataCopy}))
+    }
+
     const handleClick = async(id) => {
         try{
+            // Lấy thông tin bảng từ textmetadata trong canvas slice chuyển vào table slice
             const tableStructure = textmetadata.filter(meta => meta.key === id)[0].metadata;
             const tableCoordinate = bbmetadata.filter(meta => meta.id === id)[0]
             const url = await cropImageURL(pageimages['preprocess'], tableCoordinate)
+            console.log(tableStructure)
             dispatch(tableupdate({
                 imageurl: url, 
                 celldata: tableStructure.celldata, 
                 merge: tableStructure.merge,
                 rowlen: tableStructure.rowlen,
-                columnlen: tableStructure.columnlen
+                columnlen: tableStructure.columnlen,
+                row: tableStructure.row,
+                column: tableStructure.column
             }))
             setOpenTableEdit(true)
         } catch (e) {
@@ -85,6 +108,7 @@ const TreeTitle = (props) => {
                         icon: <HighlightOutlined />,
                         tooltip: 'click to edit text',
                         enterIcon: <CheckOutlined />,
+                        onChange: handleLineChange,
                     }}
                 >
                     {props.text}

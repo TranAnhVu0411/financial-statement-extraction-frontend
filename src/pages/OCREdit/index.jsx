@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
-import { loadimages, pageinfo } from "../../redux/features/document.slice";
+import { loadimages, pageinfo, loadingchange } from "../../redux/features/document.slice";
 import { canvasupdate, reset } from "../../redux/features/canvas.slice";
-import { newupdate } from "../../redux/features/newbb.slice";
+import { newupdate, newreset } from "../../redux/features/newbb.slice";
 import { Card, Col, Row, message, List, Image, Button, Switch, Space } from "antd";
 import './style.scss';
 // import { urltoFile } from '../../utils/convertBase64ToFileObj';
@@ -11,14 +11,15 @@ import Canvas from "./Canvas/index";
 import { json2tree } from "../../utils/json2tree";
 import Label from "./Label/index";
 import New from "./New/index";
+import FileService from "../../services/file.service";
 
 const SCALEBY = 1.25;
 
 const OCREdit = () => {
     const dispatch = useDispatch();
-    const { images, document, metadata, pageimages } = useSelector((state) => ({ ...state.document }));
-    const { width, height, scale, canvasstate, highlight, bbmetadata, checkedid, selectedbbid } = useSelector((state) => ({ ...state.canvas }));
-    const { displaynewbb, linemeta } = useSelector((state) => ({ ...state.newbb }));
+    const { images, document, metadata, pageimages, pageindex } = useSelector((state) => ({ ...state.document }));
+    const { width, height, scale, canvasstate, highlight, bbmetadata, textmetadata, checkedid, selectedbbid, disablemenu } = useSelector((state) => ({ ...state.canvas }));
+    const { displaynewbb, linemeta, tablemeta, type } = useSelector((state) => ({ ...state.newbb }));
     const [searchParams] = useSearchParams();
     const ref = useRef(null)
     const [imageState, setImageState] = useState(true);
@@ -34,8 +35,9 @@ const OCREdit = () => {
         dispatch(pageinfo({values, message}))
         // let fileObj = await urltoFile(images[idx], `temp.jpg`,'image/jpeg');
         // let url =  URL.createObjectURL(fileObj)
-        dispatch(canvasupdate({imageurl: images[idx]}));
+        dispatch(canvasupdate({imageurl: images[idx], disablemenu: false}));
         dispatch(reset({canvasstate: 'edit'}));
+        dispatch(newreset());
         setImageState(true);
     }
 
@@ -56,6 +58,7 @@ const OCREdit = () => {
 
     const switchState = (checked) => {
         dispatch(reset({canvasstate: checked?'edit':'new'}))
+        dispatch(newreset())
     }
 
     const switchHighlight = (checked) => {
@@ -85,31 +88,92 @@ const OCREdit = () => {
         // Xoá bounding box khi ấn delete/backspace
         if (e.keyCode === 8 || e.keyCode === 46) {
             if (selectedbbid !== null) {
-                if (canvasstate === 'edit'){
-                    const newRectangles = bbmetadata.filter(
-                        rectangle => rectangle.id !== selectedbbid
-                    );
-                    dispatch(canvasupdate({bbmetadata: newRectangles}));
+                if (canvasstate==='new'){
+                    let displaynewbbCopy = displaynewbb.filter(bb => bb.id !== selectedbbid)
+                    if (type === 'line') {
+                        let linemetaCopy = linemeta.filter(meta => meta.id !== selectedbbid)
+                        dispatch(newupdate({displaynewbb: displaynewbbCopy, linemeta: linemetaCopy}))
+                    }else{
+                        let tablemetaCopy = tablemeta.filter(meta => meta.id !== selectedbbid)
+                        dispatch(newupdate({displaynewbb: displaynewbbCopy, tablemeta: tablemetaCopy}))
+                    }
                 } else {
-                    const newRectangles = displaynewbb.filter(
-                        rectangle => rectangle.id !== selectedbbid
-                    );
-                    const newLines = linemeta.filter(
-                        line => line.id !== selectedbbid
-                    );
-                    dispatch(newupdate({displaynewbb: newRectangles, linemeta: newLines}));
+                    let textmetadataCopy = []
+                    if (selectedbbid.includes('table')){
+                        textmetadataCopy = textmetadata.filter(meta => meta.key !== selectedbbid)
+                    } else {
+                        let parentId = bbmetadata.filter(meta => meta.id === selectedbbid)[0].parent_id
+                        let linesMeta = textmetadata.filter(meta => meta.key === parentId)[0].children
+                        let linesMetaCopy = linesMeta.filter(
+                            meta => meta.key !== selectedbbid
+                        )
+                        if (linesMetaCopy.length === 0){
+                            textmetadataCopy = textmetadata.filter(
+                                meta => meta.key !== parentId
+                            )
+                        }else{
+                            textmetadataCopy = textmetadata.map(meta => {
+                                if(meta.key === parentId) {
+                                    return {...meta, children: linesMetaCopy}
+                                }
+                                return meta
+                            })
+                        }
+                    }
+                    const bbmetadataCopy = bbmetadata.filter(
+                        meta => meta.id !== selectedbbid
+                    )
+                    dispatch(canvasupdate({bbmetadata: bbmetadataCopy, textmetadata: textmetadataCopy}))
                 }
             }
         }
     };
+
+    const handleSave = async() => {
+        try {
+            dispatch(loadingchange({loading: true, tip: "Save page changes..."}))
+            let text_metadata = {};
+            let table_metadata = [];
+            for(let i = 0; i < bbmetadata.length; i++) {
+                if (bbmetadata[i].type === 'line'){
+                    if (!(bbmetadata[i].parent_id in text_metadata)){
+                        text_metadata[bbmetadata[i].parent_id]=[]
+                    }
+                    let text = textmetadata.filter(metadata => metadata.key === bbmetadata[i].parent_id)[0].children.filter(metadata => metadata.key === bbmetadata[i].id)[0].text
+                    text_metadata[bbmetadata[i].parent_id].push({
+                        line_coordinates: [bbmetadata[i].x, bbmetadata[i].y, bbmetadata[i].width, bbmetadata[i].height], 
+                        text: text
+                    })
+                } else {
+                    let table_meta = textmetadata.filter(metadata => metadata.key === bbmetadata[i].parent_id)[0].metadata
+                    table_metadata.push({
+                        table_coordinate: [bbmetadata[i].x, bbmetadata[i].y, bbmetadata[i].width, bbmetadata[i].height], 
+                        table_structure: table_meta
+                    })
+                }
+            }
+            let updated_metadata = {table_metadata: table_metadata, text_metadata: Object.values(text_metadata)}
+            let metadataFileObj = new File([new Blob([JSON.stringify(updated_metadata)])], `page-${pageindex}-ocr.json`, {
+                type: 'application/json',
+            });
+            let metadataFormData = new FormData();
+            metadataFormData.append('location', `${document.userid}/${document.id}/metadata/${pageindex}`)
+            metadataFormData.append('file', metadataFileObj);
+            await FileService.upload(metadataFormData); 
+            dispatch(loadingchange({loading: false, tip: `completed`}))
+        } catch (error) {
+            console.log(error)
+            dispatch(loadingchange({loading: false, tip: `failed`}))
+        }
+    }
 
     return(
         <div className="ocredit component">
             <Row style={{ marginBottom: 8 }}>
                 <Col span={24} type="flex" align="middle">
                     <Space size={20}>
-                        <Button onClick = {zoomIn}>+</Button>
-                        <Button onClick = {zoomOut}>-</Button>
+                        <Button onClick = {zoomIn} disabled={disablemenu}>+</Button>
+                        <Button onClick = {zoomOut} disabled={disablemenu}>-</Button>
                         <span>
                             <span>Image:</span>
                             <Switch 
@@ -118,6 +182,7 @@ const OCREdit = () => {
                                 unCheckedChildren="Preprocess"
                                 onChange={switchImageState}
                                 checked={imageState}
+                                disabled={disablemenu}
                             />
                         </span>
                         <span>
@@ -125,6 +190,7 @@ const OCREdit = () => {
                             <Switch
                                 onChange={switchHighlight}
                                 checked={highlight}
+                                disabled={disablemenu}
                             />
                         </span>
                         <span>
@@ -135,8 +201,16 @@ const OCREdit = () => {
                                 unCheckedChildren="New"
                                 onChange={switchState}
                                 checked={canvasstate==='edit'?true:false}
+                                disabled={disablemenu}
                             />
                         </span>
+                        <Button 
+                            type='primary'
+                            onClick={handleSave}
+                            disabled={disablemenu}
+                        >
+                            Save changes
+                        </Button>
                     </Space>
                 </Col>
             </Row>
