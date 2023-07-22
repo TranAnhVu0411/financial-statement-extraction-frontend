@@ -46,7 +46,7 @@ const Home = () => {
             }
             dispatch(loadingchange({loading: true, tip: "Initializing Project..."}))
             // create record in db
-            const documentResponse = await DocumentService.create({ userid: user.account.id, documentname: files[0].name });
+            const documentResponse = await DocumentService.create({ userid: user.account._id, documentname: files[0].name });
             if (documentResponse.status!==200) {
                 const error = await documentResponse.json();
                 throw new Error(error.message);
@@ -54,15 +54,15 @@ const Home = () => {
             dispatch(setdocumentmeta({document: documentResponse.data})) // Set document metadata state
             // upload pdf document to server
             let formData = new FormData();
-            formData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}`);
+            formData.append('location', `${documentResponse.data.userid}/${documentResponse.data._id}`);
             formData.append('file', files[0].originFileObj);
             const fileResponse = await FileService.upload(formData);
             if (fileResponse.status!==200) {
-                await DocumentService.update(documentResponse.data.id, {pdfstatus: 'error'});
+                await DocumentService.update(documentResponse.data._id, {pdfstatus: 'error'});
                 const error = await fileResponse.json();
                 throw new Error(error.message);
             }
-            await DocumentService.update(documentResponse.data.id, {pdfstatus: 'ready'});
+            await DocumentService.update(documentResponse.data._id, {pdfstatus: 'ready'});
             // preprocess image
             dispatch(loadingchange({tip: "Preprocessing PDF..."}))
             let preprocessFormData = new FormData();
@@ -78,7 +78,7 @@ const Home = () => {
                 for (let type in preprocessResponse.data[i]){
                     let fileObj = await urltoFile(preprocessResponse.data[i][type], `page-${i}-${type}.jpg`,'image/jpeg');
                     let uploadFormData = new FormData();
-                    uploadFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}/images/${i}`);
+                    uploadFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data._id}/images/${i}`);
                     uploadFormData.append('file', fileObj);
                     uploadRequestList.push(FileService.upload(uploadFormData))
                 }
@@ -87,11 +87,11 @@ const Home = () => {
             let uploadStatusList = uploadResponses.map(response => {return response.status})
             const isOK = (status) => status === 200;
             if (!uploadStatusList.every(isOK)){
-                await DocumentService.update(documentResponse.data.id, {imagestatus: 'error'});
-                await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/images`});
+                await DocumentService.update(documentResponse.data._id, {imagestatus: 'error'});
+                await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data._id}/images`});
                 throw new Error('Upload images failed');
             }
-            await DocumentService.update(documentResponse.data.id, {imagestatus: 'ready', pagenum: preprocessResponse.data.length});
+            await DocumentService.update(documentResponse.data._id, {imagestatus: 'ready', pagenum: preprocessResponse.data.length});
             // ocr images
             let ocrResponses = []
             for (let i = 0; i<preprocessResponse.data.length; i++){
@@ -102,27 +102,12 @@ const Home = () => {
                 ocrFormData.append('type', 'app');
                 let response = await OCRService.ocr(ocrFormData)
                 if (response.status!==200){
-                    await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
+                    await DocumentService.update(documentResponse.data._id, {ocrstatus: 'error'});
                     const error = await response.json();
                     throw new Error(error.message);
                 }
                 ocrResponses.push(response);
             }
-
-            // let ocrRequestList = []
-            // for (let i = 0; i<preprocessResponse.data.length; i++){
-            //     let fileObj = await urltoFile(preprocessResponse.data[i]['preprocess'], `page-${i}-${'preprocess'}.jpg`,'image/jpeg');
-            //     let ocrFormData = new FormData();
-            //     ocrFormData.append('file', fileObj);
-            //     ocrRequestList.push(OCRService.ocr(ocrFormData))
-            // }
-            // let ocrResponses = await axios.all(ocrRequestList);
-            // let ocrStatusList = ocrResponses.map(response => {return response.status})
-            // if (!ocrStatusList.every(isOK)){
-            //     await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
-            //     const error = {message: 'ocr failed'};
-            //     throw new Error(error.message);
-            // }
 
             // Upload results
             let metadataRequestList = []
@@ -134,40 +119,18 @@ const Home = () => {
                     type: 'application/json',
                 });
                 let metadataFormData = new FormData();
-                metadataFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}/metadata/${i}`)
+                metadataFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data._id}/metadata/${i}`)
                 metadataFormData.append('file', metadataFileObj);
                 metadataRequestList.push(FileService.upload(metadataFormData))
-                // let metadataResponse = await FileService.upload(metadataFormData)
-                // if (metadataResponse.status!==200){
-                //     await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
-                //     await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/metadata`});
-                //     throw new Error('Upload result failed');
-                // }
-                // Upload excel file
-                // if (ocrResponses[i].data.file.length > 0) {
-                //     for (let j = 0; j<ocrResponses[i].data.file.length; j++) {
-                //         let excelFileObj = await urltoFile(ocrResponses[i].data.file[j].base64, `${ocrResponses[i].data.file[j].name}.xlsx`,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                //         let excelFormData = new FormData();
-                //         excelFormData.append('location', `${documentResponse.data.userid}/${documentResponse.data.id}/metadata/${i}/excel`);
-                //         excelFormData.append('file', excelFileObj);
-                //         metadataRequestList.push(FileService.upload(excelFormData))
-                        // let excelResponse = await FileService.upload(metadataFormData)
-                        // if (excelResponse.status!==200){
-                        //     await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
-                        //     await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/metadata`});
-                        //     throw new Error('Upload result failed');
-                        // }
-                //     }
-                // }
             }
             let metadataResponses = await axios.all(metadataRequestList);
             let metadataStatusList = metadataResponses.map(response => {return response.status})
             if (!metadataStatusList.every(isOK)){
-                await DocumentService.update(documentResponse.data.id, {ocrstatus: 'error'});
-                await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data.id}/metadata`});
+                await DocumentService.update(documentResponse.data._id, {ocrstatus: 'error'});
+                await FileService.remove({location: `${documentResponse.data.userid}/${documentResponse.data._id}/metadata`});
                 throw new Error('Upload result failed');
             } 
-            await DocumentService.update(documentResponse.data.id, {ocrstatus: 'ready'});
+            await DocumentService.update(documentResponse.data._id, {ocrstatus: 'ready'});
             dispatch(loadingchange({loading: false, tip: `completed`}))
             navigate('/result')
         } catch (err) {

@@ -23,7 +23,7 @@ export const loadimages = createAsyncThunk("document/loadimages", async({ values
             const error = await documentResponse.json();
             throw new Error(error.message);
         }
-        const fetchResponse = await FileService.loadBackgroundImages({id: documentResponse.data.id, userid: documentResponse.data.userid, pagenum: documentResponse.data.pagenum});
+        const fetchResponse = await FileService.loadBackgroundImages({id: documentResponse.data._id, userid: documentResponse.data.userid, pagenum: documentResponse.data.pagenum});
         if (fetchResponse.status!==200) {
             const error = await fetchResponse.json();
             throw new Error(error.message);

@@ -31,7 +31,7 @@ const OCREdit = () => {
     }, []);
     
     const handleImageClick = async(idx) => {
-        let values = {id: document.id, userid: document.userid, page: idx};
+        let values = {id: document._id, userid: document.userid, page: idx};
         dispatch(pageinfo({values, message}))
         // let fileObj = await urltoFile(images[idx], `temp.jpg`,'image/jpeg');
         // let url =  URL.createObjectURL(fileObj)
@@ -157,7 +157,7 @@ const OCREdit = () => {
                 type: 'application/json',
             });
             let metadataFormData = new FormData();
-            metadataFormData.append('location', `${document.userid}/${document.id}/metadata/${pageindex}`)
+            metadataFormData.append('location', `${document.userid}/${document._id}/metadata/${pageindex}`)
             metadataFormData.append('file', metadataFileObj);
             await FileService.upload(metadataFormData); 
             dispatch(loadingchange({loading: false, tip: `completed`}))

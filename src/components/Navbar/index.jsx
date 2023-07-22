@@ -11,7 +11,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     return (
         <div className='navbar component'>
-            <div className='logo-container'>
+            <div className='logo-container' onClick={() => navigate('/')} style={{cursor: 'pointer'}}>
                 <img src={Logo} alt='website logo' />
                 <h1>Financial OCR</h1>
             </div>

@@ -9,7 +9,7 @@ const DocumentList = () => {
     const { documents } = useSelector((state) => ({ ...state.document }));
     
     useEffect(() => {
-        let values = {userid: user.account.id};
+        let values = {userid: user.account._id};
         dispatch(index({values, message}));
     }, [])
     return (
@@ -21,8 +21,8 @@ const DocumentList = () => {
                 renderItem={(item, index) => (
                     <List.Item>
                         <List.Item.Meta
-                            title={<a href={`/edit?id=${item.id}`}>{item.documentname}</a>}
-                            description={`Create date: ${item.createdate}`}
+                            title={<a href={`/edit?id=${item._id}`}>{item.documentname}</a>}
+                            description={`Time: ${item.updatedAt}`}
                         />
                     </List.Item>
                 )}

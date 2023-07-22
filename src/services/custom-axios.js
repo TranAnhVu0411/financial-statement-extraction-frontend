@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const db_axios_instance = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3501/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:3503/api',
 });
 
 db_axios_instance.interceptors.request.use((req) => {

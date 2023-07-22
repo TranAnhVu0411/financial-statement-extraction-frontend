@@ -10,7 +10,7 @@ const OCRResult = () => {
         navigate('/');
     }
     const handleEditDocument = () => {
-        navigate(`/edit?id=${document.id}`);
+        navigate(`/edit?id=${document._id}`);
     }
 
     return (
