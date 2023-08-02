@@ -1,3 +1,8 @@
+# Financial-Statement-Extraction-Frontend
+Giao diện web OCR dành cho người dùng cuối
+
+Hướng dẫn chạy như dưới:
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
